@@ -9,7 +9,7 @@ import { OpenAIEmbeddings } from "langchain/embeddings";
 const embedder = new OpenAIEmbeddings();
 const pineconeStore = new PineconeStore(embedder, {
   pineconeIndex: index,
-  namespace: "langchain",
+  namespace: "new-test",
 });
 
 /**

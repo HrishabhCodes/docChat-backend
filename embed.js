@@ -46,13 +46,45 @@ import { index } from "./pinecone.js";
 
 (async () => {
   //read article
-  const article = await fs.readFileSync("article.txt", { encoding: "utf-8" });
-  //split the text
-  const splittedText = await textSplitter.createDocuments([article]);
+  const fileJson = JSON.parse(
+    fs.readFileSync("docs/all_pdfs_data.json", "utf8")
+  );
+
+  let documents = [];
+  for (let i = 0; i < 1; i++) {
+    const item = fileJson[i];
+    const metadata = item.metadata;
+    const dateStr = metadata["/CreationDate"];
+    const regex = /^D:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/;
+    const [, year, month, day, hour, minute, second, offsetHour, offsetMinute] =
+      dateStr.match(regex);
+    const date = new Date(
+      `${year}-${month}-${day}T${hour}:${minute}:${second}`
+    );
+    const isoString = date.toISOString().slice(0, -5);
+    const document = await textSplitter.createDocuments([item.text], {
+      metadatas: [{ file_name: item.file_name, category: "category_name" }],
+      contentKey: "text",
+    });
+    for (let j = 0; j < document.length; j++) {
+      const newMetadata = {
+        file: item.file_name,
+        title: metadata["/Title"],
+        author: metadata["/Author"],
+        producer: metadata["/Producer"],
+        createdAt: isoString,
+      };
+      document[j].metadata = newMetadata;
+    }
+    documents = [...documents, ...document];
+  }
 
   //store the splitted text to pinecone, in index "article" and namespace "langchain" (namespace is for filter purpose later, can be whatever you want)
-  PineconeStore.fromDocuments(splittedText, embedder, {
+  const uploadeddocs = await PineconeStore.fromDocuments(documents, embedder, {
     pineconeIndex: index,
-    namespace: "langchain",
+    namespace: "new-test",
+    textKey: "text",
   });
+
+  console.log(uploadeddocs);
 })();
