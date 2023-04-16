@@ -1,42 +1,45 @@
-//server.js
-
-/**
-Import required langchain and pinecone library like in ./embed.js
-**/
-import { PineconeStore } from "langchain/vectorstores";
-import { index } from "./pinecone.js";
-import { OpenAIEmbeddings } from "langchain/embeddings";
-const embedder = new OpenAIEmbeddings();
-const pineconeStore = new PineconeStore(embedder, {
-  pineconeIndex: index,
-  namespace: "docs-pdf",
-});
-
-/**
-Init express app
-**/
+import { fileURLToPath } from "url";
+import bodyParser from "body-parser";
+import multer from "multer";
+import * as dotenv from "dotenv";
+dotenv.config();
+import path from "path";
 import express from "express";
+import cors from "cors";
 const app = express();
 const port = 9000;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-app.get("/delete", async (req, res) => {
-  const namespace = req.query.namespace;
-  if (!namespace) {
-    res.status(404).send({ message: `Please provide the namespace!` });
-  }
-  await index.delete1({ deleteAll: true, namespace });
-  res.status(200).send({ message: `Deleted all vectors of '${namespace}'!` });
+import { reply } from "./controllers/query.js";
+import { answer } from "./controllers/makeChain.js";
+import { respond1 } from "./controllers/queryChain.js";
+import { deleteNamespace } from "./controllers/deleteNamespace.js";
+import { uploadFiles } from "./controllers/uploadFiles.js";
+import apiRoutes from "./routes/api.js";
+
+app.use(cors());
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./docs");
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname);
+  },
 });
 
-app.get("/", async (req, res) => {
-  const { q } = req.query;
-  try {
-    const data = await pineconeStore.similaritySearch(q, 5);
-    res.status(200).send([...data]);
-  } catch (err) {
-    res.status(404).send({ message: `${q} doesn't match any search` });
-  }
-});
+const upload = multer({ storage: storage });
+
+app.post("/upload", upload.array("files"), uploadFiles);
+app.use("/api", apiRoutes);
+app.use("/docs", express.static(path.join(__dirname, "uploadedDocs")));
+app.get("/delete", deleteNamespace);
+// app.post("/query", answer);
+app.post("/query", respond1);
+// app.post("/query", reply);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
