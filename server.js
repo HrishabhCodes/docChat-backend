@@ -7,7 +7,7 @@ import path from "path";
 import express from "express";
 import cors from "cors";
 const app = express();
-const port = 9000;
+const PORT = 9000;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import { reply } from "./controllers/query.js";
@@ -16,6 +16,8 @@ import { respond1 } from "./controllers/queryChain.js";
 import { deleteNamespace } from "./controllers/deleteNamespace.js";
 import { uploadFiles } from "./controllers/uploadFiles.js";
 import apiRoutes from "./routes/api.js";
+import authRoutes from "./routes/auth.js";
+import mongoose from "mongoose";
 
 app.use(cors());
 
@@ -35,12 +37,19 @@ const upload = multer({ storage: storage });
 
 app.post("/upload", upload.array("files"), uploadFiles);
 app.use("/api", apiRoutes);
+app.use("/auth", authRoutes);
 app.use("/docs", express.static(path.join(__dirname, "uploadedDocs")));
 app.get("/delete", deleteNamespace);
 // app.post("/query", answer);
 app.post("/query", respond1);
 // app.post("/query", reply);
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+mongoose.set("strictQuery", false);
+mongoose
+  .connect(process.env.MONGODB_URI)
+  .then((result) => {
+    app.listen(PORT, () => {
+      console.log(`App is listening on port ${PORT}...`);
+    });
+  })
+  .catch((err) => console.log(err));
