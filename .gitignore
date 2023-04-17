@@ -7,6 +7,7 @@
 
 # testing
 /coverage
+updated_merged_data.csv
 
 # next.js
 /.next/
