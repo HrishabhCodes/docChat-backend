@@ -41,8 +41,8 @@ app.use("/auth", authRoutes);
 app.use("/docs", express.static(path.join(__dirname, "uploadedDocs")));
 app.get("/delete", deleteNamespace);
 // app.post("/query", answer);
-app.post("/query", respond1);
-// app.post("/query", reply);
+// app.post("/query", respond1);
+app.post("/query", reply);
 
 mongoose.set("strictQuery", false);
 mongoose
