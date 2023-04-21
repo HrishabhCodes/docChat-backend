@@ -5,6 +5,10 @@ import { CustomPDFLoader } from "../utils/customPDFLoader.js";
 import pkg from "../config/pinecone.js";
 const { index } = pkg;
 import { DirectoryLoader } from "langchain/document_loaders";
+import fs from "fs";
+import PDFParser from "pdf2json";
+import { PDFExtract } from "pdf.js-extract";
+import { IntelligentTextSplitter } from "../utils/intelligentTextSplitter.js";
 
 /* Name of directory to retrieve your files from */
 const filePath = "docs";
@@ -15,10 +19,10 @@ const run = async (files) => {
     const directoryLoader = new DirectoryLoader(filePath, {
       ".pdf": (path) => new CustomPDFLoader(path),
     });
-
+    // /Users/hrishabh/Internship/Gutenberg/trying-embeddings/langchain-pinecone/docs/01 - Ujwal Resume.pdf
     const rawDocs = await directoryLoader.load();
 
-    console.log(rawDocs);
+    // console.log(rawDocs);
 
     for (const doc of rawDocs) {
       const text = doc.pageContent;
@@ -33,7 +37,10 @@ const run = async (files) => {
       chunkOverlap: 200,
     });
 
+    // const textSplitter = new IntelligentTextSplitter();
     const docs = await textSplitter.splitDocuments(rawDocs);
+    console.log(docs[0]);
+    // const docs = await textSplitter.splitDocuments(rawDocs);
     // console.log(docs);
     console.log("creating vector store...");
 

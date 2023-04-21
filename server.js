@@ -10,9 +10,10 @@ const app = express();
 const PORT = 9000;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-import { reply } from "./controllers/query.js";
-import { answer } from "./controllers/makeChain.js";
-import { respond1 } from "./controllers/queryChain.js";
+import { answerQnA } from "./controllers/queryQnA.js";
+import { answerGenerative } from "./controllers/queryGenerative.js";
+// import { answer } from "./controllers/makeChain.js";
+// import { respond1 } from "./controllers/queryChain.js";
 import { deleteNamespace } from "./controllers/deleteNamespace.js";
 import { uploadFiles } from "./controllers/uploadFiles.js";
 import apiRoutes from "./routes/api.js";
@@ -42,7 +43,8 @@ app.use("/docs", express.static(path.join(__dirname, "uploadedDocs")));
 app.get("/delete", deleteNamespace);
 // app.post("/query", answer);
 // app.post("/query", respond1);
-app.post("/query", reply);
+app.post("/queryQnA", answerQnA);
+app.post("/queryGenerative", answerGenerative);
 
 mongoose.set("strictQuery", false);
 mongoose

@@ -1,6 +1,7 @@
 import { Document } from "langchain/document";
 import { readFile } from "fs/promises";
 import { BaseDocumentLoader } from "langchain/document_loaders";
+import { PDFExtract } from "pdf.js-extract";
 
 class BufferLoader extends BaseDocumentLoader {
   constructor(filePathOrBlob) {
@@ -34,23 +35,41 @@ class BufferLoader extends BaseDocumentLoader {
 
 export class CustomPDFLoader extends BufferLoader {
   async parse(raw, metadata) {
-    const { pdf } = await PDFLoaderImports();
-    const parsed = await pdf(raw);
-    const { info } = parsed;
+    // const { pdf } = await PDFLoaderImports();
+    const pdfExtract = new PDFExtract();
+    const options = {};
+    const data = await new Promise((resolve, reject) => {
+      pdfExtract.extract(this.filePathOrBlob, options, (err, data) => {
+        if (err) reject(err);
+        resolve(data);
+      });
+    });
+
+    let str = "";
+
+    for (const page of data.pages) {
+      const contentArr = page.content;
+      for (const contentChunk of contentArr) {
+        str += contentChunk.str + " ";
+      }
+    }
+
+    const { meta } = data;
+    const { info } = meta;
     let fileMetadata;
-    if (parsed.metadata) {
-      fileMetadata = parsed.metadata["_metadata"];
+    if (meta.metadata) {
+      fileMetadata = meta.metadata["_metadata"];
     }
     return [
       new Document({
-        pageContent: parsed.text,
+        pageContent: str,
         metadata: {
           ...metadata,
           title: info.Title,
           author: info.Author || "unknown",
           producer: info.Producer,
           createdAt: fileMetadata && fileMetadata["xmp:createdate"],
-          pdf_numpages: parsed.numpages,
+          pdf_numpages: data.pages.length,
         },
       }),
     ];
